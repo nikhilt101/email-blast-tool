@@ -1,1 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Email Blast Tool</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>📧 Email Blast Tool</h1>
 
+    <section class="card">
+      <h2>1) Upload CSV/XLSX</h2>
+      <form id="uploadForm">
+        <input type="file" name="file" id="file" accept=".csv,.xlsx,.xls" required />
+        <button type="submit">Parse</button>
+      </form>
+      <p id="uploadInfo"></p>
+      <textarea id="emailsArea" placeholder="Parsed emails will appear here..." rows="6"></textarea>
+    </section>
+
+    <section class="card">
+      <h2>2) Compose</h2>
+      <label>Subject</label>
+      <input id="subject" placeholder="Subject" />
+
+      <label>From Name (optional)</label>
+      <input id="fromName" placeholder="Your Name" />
+
+      <label>From Email</label>
+      <input id="fromEmail" placeholder="your@gmail.com" />
+
+      <label>HTML Template (use {{name}})</label>
+      <textarea id="htmlTemplate" rows="10"><h2>Hello {{name}},</h2><p>This is a test campaign from the open‑source Email Blast Tool.</p></textarea>
+
+      <label><input type="checkbox" id="testMode" checked /> Test mode (send to first 5)</label>
+
+      <button id="previewBtn">Preview</button>
+      <button id="sendBtn">Send Emails</button>
+      <pre id="result"></pre>
+    </section>
+
+    <footer>
+      <a href="https://github.com/nikhilt101/email-blast-tool" target="_blank">GitHub</a>
+      · MIT License
+    </footer>
+  </div>
+
+  <script>
+    // Simple DOM helpers
+    const $ = (id) => document.getElementById(id);
+    let recipients = [];
+
+    const uploadForm = $("uploadForm");
+    const uploadInfo = $("uploadInfo");
+    const emailsArea = $("emailsArea");
+    const previewBtn = $("previewBtn");
+    const sendBtn = $("sendBtn");
+    const result = $("result");
+
+    uploadForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      uploadInfo.textContent = "Parsing...";
+      const fd = new FormData(uploadForm);
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: fd
+      });
+      const data = await response.json();
+      if (data.error) {
+        uploadInfo.textContent = data.error;
+        return;
+      }
+      recipients = data.recipients;
+      emailsArea.value = recipients
+        .map((x) => `${x.email}${x.name ? " | " + x.name : ""}`)
+        .join("\n");
+      uploadInfo.textContent = `Parsed ${data.count} rows`;
+    });
+
+    previewBtn.addEventListener("click", async () => {
+      result.textContent = "Generating preview...";
+      const body = {
+        htmlTemplate: $("htmlTemplate").value,
+        recipients
+      };
+      const res = await fetch("/api/preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+      const data = await res.json();
+      if (data.error) {
+        result.textContent = data.error;
+        return;
+      }
+      result.textContent = JSON.stringify(data, null, 2);
+    });
+
+    sendBtn.addEventListener("click", async () => {
+      result.textContent = "Sending...";
+      const body = {
+        subject: $("subject").value,
+        fromName: $("fromName").value,
+        fromEmail: $("fromEmail").value,
+        htmlTemplate: $("htmlTemplate").value,
+        recipients,
+        testMode: $("testMode").checked
+      };
+      const res = await fetch("/api/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+      const data = await res.json();
+      result.textContent = JSON.stringify(data, null, 2);
+    });
+  </script>
+</body>
+</html>
