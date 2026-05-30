@@ -13,7 +13,35 @@ Send personalized HTML emails using CSV/XLSX + Gmail SMTP. Open source, MIT.
 - Basic rate limiting and send delay to help avoid spam flags
 
 ## Quick Start
+## Running with Docker
 
+### 1. Create your environment file
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` and provide your SMTP credentials.
+
+### 2. Start the application
+
+```bash
+docker compose up --build
+```
+
+### 3. Open the application
+
+Visit:
+
+```text
+http://localhost:3000
+```
+
+### Stop the application
+
+```bash
+docker compose down
+```
 ```bash
 git clone https://github.com/nikhilt101/email-blast-tool.git
 cd email-blast-tool
